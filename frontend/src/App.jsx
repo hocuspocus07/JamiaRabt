@@ -5,6 +5,7 @@ import Landing from './pages/Landing.jsx';
 import Signup from './pages/SIgnup.jsx';
 import ChatComponent from './components/ChatComponent.jsx';
 import Community from './pages/Community.jsx';
+import Alumni from './pages/Alumni.jsx';
 
 function App() {
 
@@ -15,6 +16,7 @@ function App() {
         <Route path='/signup' element={<Signup/>}/>
         <Route path='/chat' element={<ChatComponent/>}/>
         <Route path='/community' element={<Community/>}/>
+        <Route path='/alumni' element={<Alumni/>}/>
       </Routes>
     </Router>
   )

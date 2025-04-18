@@ -135,7 +135,7 @@ function NavBar() {
 							>
 								<a
 									rel="noopener noreferrer"
-									href="#"
+									href="/alumni"
 									className="flex items-center p-2 space-x-3 rounded-md"
 									onClick={() => setActiveItem('Alumni Directory')}
 								>
