@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Landing from './pages/Landing.jsx';
+import Signup from './pages/SIgnup.jsx';
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
-    <div className='h-screen w-screen bg-black'></div>
+    <Router>
+      <Routes>
+        <Route path='/' element={<Landing/>}/>
+        <Route path='/signup' element={<Signup/>}/>
+      </Routes>
+    </Router>
   )
 }
 
