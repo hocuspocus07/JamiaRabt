@@ -20,7 +20,7 @@ function NavBar() {
 				</svg>
 			</button>
 			<div
-				className={`fixed md:relative z-40 flex flex-col h-screen p-3 w-60 dark:bg-gray-50 dark:text-gray-800 bg-gray-800 shadow-lg md:shadow-none transition-all duration-300 ease-in-out
+				className={`fixed md:relative z-999 flex flex-col h-screen p-3 w-60 dark:bg-gray-50 dark:text-gray-800 bg-gray-800 shadow-lg md:shadow-none transition-all duration-300 ease-in-out
           ${isOpen ? 'left-0' : '-left-60 md:left-0'}`}
 			>
 				<div className="space-y-3">
