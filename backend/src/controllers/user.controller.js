@@ -265,54 +265,51 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         location,
         skills,
         linkedInUrl
-       // role
     } = req.body;
 
-    // Check if at least one updatable field is provided
+    // Validate at least one field is provided
     const updatableFields = [
         'fullName', 'email', 'username', 'graduationYear',
         'course', 'profession', 'company', 'location', 
-        'skills', 'linkedInUrl', //'role'
+        'skills', 'linkedInUrl'
     ];
+    
     const hasValidField = updatableFields.some(field => req.body[field] !== undefined);
-
     if (!hasValidField) {
-        throw new ApiError(400, "At least one valid field is required for update");
+        throw new ApiError(400, "At least one field must be provided for update");
     }
 
-    // Build update object
-    const updateFields = {};
-    if (fullName) updateData.fullName = fullName;
-    if (email) updateData.email = email;
-    if (username) updateData.username = username;
-    if (graduationYear) updateData.graduationYear = graduationYear;
-    if (course) updateData.course = course;
-    if (profession) updateData.profession = profession;
-    if (company) updateData.company = company;
-    if (location) updateData.location = location;
-    if (skills) updateData.skills = skills.split(',');
-    if (linkedInUrl) updateData.linkedInUrl = linkedInUrl;
-   // if (role) updateFields.role = role; // Must be 'alumni' or 'admin'
+    // Build update object (renamed from updateData to updates for consistency)
+    const updates = {};
+    if (fullName) updates.fullName = fullName;
+    if (email) updates.email = email;
+    if (username) updates.username = username;
+    if (graduationYear) updates.graduationYear = graduationYear;
+    if (course) updates.course = course;
+    if (profession) updates.profession = profession;
+    if (company) updates.company = company;
+    if (location) updates.location = location;
+    if (skills) updates.skills = Array.isArray(skills) ? skills : skills.split(',');
+    if (linkedInUrl) updates.linkedInUrl = linkedInUrl;
 
-    // Validate email format if provided
+    // Validate email format if being updated
     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
         throw new ApiError(400, "Invalid email format");
     }
 
-    // Update user
-    const user = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
-        { $set: updateFields },
-        { new: true }
+        { $set: updates }, // Changed from updateData to updates
+        { new: true, runValidators: true }
     ).select("-password -refreshToken");
 
-    if (!user) {
+    if (!updatedUser) {
         throw new ApiError(404, "User not found");
     }
 
     return res
         .status(200)
-        .json(new ApiResponse(200, user, "Account details updated successfully"));
+        .json(new ApiResponse(200, updatedUser, "Account details updated successfully"));
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
