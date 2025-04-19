@@ -15,7 +15,9 @@ app.use(express.urlencoded({ extended: true }))
 app.use(express.static("public"))
 app.use(cookieParser())
 
-
+app.get('/', (req, res) => {
+    res.status(200).send('Welcome to JamiaRabt Backend');
+});
 //routes import
 import userRouter from './routes/user.routes.js';
 import postRouter from "./routes/post.routes.js";
