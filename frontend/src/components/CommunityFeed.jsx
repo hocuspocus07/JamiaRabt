@@ -72,21 +72,20 @@ function CommunityFeed() {
 
     return (
         <div className="h-screen w-full flex antialiased text-gray-200 bg-gray-900 overflow-hidden">
-            <NavBar />
-
+<NavBar/>
             {/* Main content */}
-            <div className="sm:flex-1 flex flex-col overflow-hidden ml-60">
+            <div className="sm:flex-1 flex flex-col overflow-hidden sm:ml-60">
                 {/* Header */}
                 <div className="border-b-2 border-gray-800 p-4 flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Community Forum</h1>
                 </div>
 
                 {/* Main content area */}
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">
                     {/* Feed content */}
                     <div className="flex-1 flex flex-col overflow-y-auto p-4">
                         {/* Create post form */}
-                        <div className="bg-gray-200 rounded-lg p-4 mb-4 shadow-lg">
+                        <div className="bg-gray-200 rounded-lg p-4 mb-4 shadow-lg w-full sm:w-auto">
                             <h2 className="text-lg font-semibold mb-3 text-black">Create a new post</h2>
                             <form onSubmit={handlePostSubmit}>
                                 <div className="mb-3">
@@ -127,10 +126,10 @@ function CommunityFeed() {
                         </div>
 
                         {/* Filter tabs */}
-                        <div className="flex space-x-2 mb-4 py-3">
+                        <div className="flex space-x-2 mb-4 sm:py-3 py-10 w-full overflow-x-auto sm:overflow-x-visible sm:flex-wrap">                            
                             <button
                                 onClick={() => setActiveTab('all')}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium ${activeTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                className={`px-3 sm:py-1.5 py-5 rounded-full text-xs font-medium ${activeTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                             >
                                 All Posts
                             </button>
@@ -138,7 +137,7 @@ function CommunityFeed() {
                                 <button
                                     key={tag}
                                     onClick={() => setActiveTab(tag)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${activeTab === tag ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                    className={`px-3 sm:py-1.5 py-5 rounded-full text-xs font-medium ${activeTab === tag ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     #{tag}
                                 </button>
@@ -211,7 +210,7 @@ function CommunityFeed() {
                     </div>
 
                     {/* Right sidebar*/}
-                    <div className="w-80 flex flex-col border-l border-gray-800 p-4 overflow-y-auto">
+                    <div className="sm:w-80 w-screen sm:h-auto h-40  flex flex-col border-l border-gray-800 p-4 overflow-y-auto">
                         <div className="bg-gray-800 rounded-lg p-4 mb-6">
                             <h2 className="font-bold text-lg mb-3">Popular Topics</h2>
                             <div className="space-y-2">
@@ -229,7 +228,7 @@ function CommunityFeed() {
                                 ))}
                             </div>
                         </div>
-
+{/* 
                         <div className="bg-gray-800 rounded-lg p-4">
                             <h2 className="font-bold text-lg mb-3">Online Now</h2>
                             <div className="space-y-3">
@@ -250,7 +249,7 @@ function CommunityFeed() {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

@@ -23,9 +23,6 @@ function ProfileCard({ name, avatar, location, profession, company, course, grad
           </div>
         </div>
         <div className="flex gap-2 mt-3">
-          <button className="flex-1 text-xs rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 px-2 py-1">
-            Connect
-          </button>
           <button className="flex-1 text-xs rounded-full border border-gray-600 text-white px-2 py-1">
             Message
           </button>
