@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,8 +17,11 @@ export default function SignupComponent() {
     skills: '',
     linkedInUrl: ''
   });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,26 +32,22 @@ export default function SignupComponent() {
     }));
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      const { email, password } = formData;
-      const response = await axios.post(
-        'https://jamiarabt.onrender.com/api/v1/users/login',
-        { email, password },
-        { withCredentials: true }
-      );
-
-      // Store tokens and user data as needed
-      console.log('Login successful:', response.data);
-      navigate('/dashboard'); // Redirect to dashboard or home page
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type and size
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload an image file');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        setError('Image must be less than 2MB');
+        return;
+      }
+      
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+      setError('');
     }
   };
 
@@ -56,30 +55,49 @@ export default function SignupComponent() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
+    // Validate required fields
+    if (!avatarFile) {
+      setError('Profile picture is required');
+      setLoading(false);
+      return;
+    }
+
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('avatar', avatarFile);
+      formDataToSend.append('fullName', formData.fullName);
+      formDataToSend.append('username', formData.username || formData.email.split('@')[0]);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('password', formData.password);
+      formDataToSend.append('course', formData.course);
+      formDataToSend.append('graduationYear', formData.graduationYear);
+      formDataToSend.append('profession', formData.profession || '');
+      formDataToSend.append('company', formData.company || '');
+      formDataToSend.append('location', formData.location || '');
+      formDataToSend.append('skills', formData.skills ? formData.skills.split(',').map(s => s.trim()) : []);
+      formDataToSend.append('linkedInUrl', formData.linkedInUrl || '');
+
       const response = await axios.post(
         'https://jamiarabt.onrender.com/api/v1/users/register',
+        formDataToSend,
         {
-          fullName: formData.fullName,
-          username: formData.username || formData.email.split('@')[0], // Default username
-          email: formData.email,
-          password: formData.password,
-          course: formData.course,
-          graduationYear: formData.graduationYear,
-          profession: formData.profession,
-          company: formData.company,
-          location: formData.location,
-          skills: formData.skills.split(','),
-          linkedInUrl: formData.linkedInUrl
-        },
-        { withCredentials: true }
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
       );
 
       console.log('Registration successful:', response.data);
-      setIsLogin(true); // Switch to login after successful registration
+      setIsLogin(true); // Switch to login after success
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
+      if (err.response) {
+        setError(err.response.data?.message || 'Registration failed. Please check your inputs.');
+      } else {
+        setError('Network error. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -114,7 +132,7 @@ export default function SignupComponent() {
 
           {/* Login Form */}
           {isLogin && (
-            <form className="space-y-4" onSubmit={handleLogin}>
+            <form className="space-y-4">
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome back</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -135,7 +153,7 @@ export default function SignupComponent() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="••••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="••••••••"
                   required
                 />
               </div>
@@ -161,13 +179,45 @@ export default function SignupComponent() {
             <form className="space-y-4" onSubmit={handleSignup}>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Create account</h2>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+                {avatarPreview && (
+                  <div className="mb-2 flex items-center">
+                    <img
+                      src={avatarPreview}
+                      alt="Preview"
+                      className="h-16 w-16 rounded-full object-cover mr-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAvatarPreview(null);
+                        setAvatarFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="text-sm text-red-600 hover:text-red-800"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  name="avatar"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  required
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="John Doe"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="John Doe"
                   required
                 />
               </div>
@@ -178,7 +228,18 @@ export default function SignupComponent() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="your@email.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="your@email.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="username.example"
                   required
                 />
               </div>
@@ -189,7 +250,7 @@ export default function SignupComponent() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="••••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="••••••••"
                   required
                 />
               </div>
@@ -200,18 +261,18 @@ export default function SignupComponent() {
                   name="course"
                   value={formData.course}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="e.g., Computer Science"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., Computer Science"
                   required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Year</label>
                 <input
-                  type="date"
+                  type="number"
                   name="graduationYear"
                   value={formData.graduationYear}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="e.g., 2023"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., 2023"
                   required
                 />
               </div>
@@ -222,7 +283,7 @@ export default function SignupComponent() {
                   name="profession"
                   value={formData.profession}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="e.g., Software Engineer"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., Software Engineer"
                 />
               </div>
               <div>
@@ -232,7 +293,7 @@ export default function SignupComponent() {
                   name="skills"
                   value={formData.skills}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"                  placeholder="e.g., JavaScript, React, Node.js"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., JavaScript, React, Node.js"
                 />
               </div>
               <button
