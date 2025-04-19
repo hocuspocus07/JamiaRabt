@@ -81,7 +81,11 @@ const registerUser = asyncHandler(async (req, res) => {
         profession: profession || null,
         company: company || null,
         location: location || null,
-        skills: skills ? skills.split(',') : [],
+        skills: Array.isArray(skills) 
+        ? skills 
+        : typeof skills === 'string' 
+            ? skills.split(',').map(skill => skill.trim()) 
+            : [],
         linkedInUrl: linkedInUrl || null
     })
 
