@@ -75,15 +75,10 @@ function CommunityFeed() {
             <NavBar />
 
             {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="sm:flex-1 flex flex-col overflow-hidden ml-60">
                 {/* Header */}
                 <div className="border-b-2 border-gray-800 p-4 flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Community Forum</h1>
-                    <div className="flex space-x-2">
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                            Create Post
-                        </button>
-                    </div>
                 </div>
 
                 {/* Main content area */}

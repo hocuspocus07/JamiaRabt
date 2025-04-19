@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import NavBar from './NavBar';
 import Sorting from './Sorting';
+import ProfileCard from './ProfileCard';
+import { useNavigate } from 'react-router-dom';
 
 const AlumniDirectory = () => {
+  const navigate = useNavigate();
+
   const [alumni] = useState([
     {
       id: 1,
@@ -18,7 +22,20 @@ const AlumniDirectory = () => {
       joinDate: "Jun. 24, 2023",
       tags: ["Tech", "Engineering"]
     },
-    // Add more alumni data as needed
+    {
+      id: 2,
+      name: "Cait Genevieve",
+      email: "cait@example.com",
+      avatar: "https://randomuser.me/api/portraits/women/21.jpg",
+      company: "Google",
+      userId: "20010511",
+      course: "Information Technology",
+      graduationYear: 2019,
+      profession: "Product Manager",
+      location: "New York, NY",
+      joinDate: "May 15, 2023",
+      tags: ["Management", "Tech"]
+    },
   ]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,7 +49,7 @@ const AlumniDirectory = () => {
     key: "name",
     direction: "ascending"
   });
-
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const handleSearch = (term) => {
     setSearchTerm(term);
   };
@@ -89,10 +106,10 @@ const AlumniDirectory = () => {
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-900">
       <NavBar />
       
-      <div className="flex-1 p-4 md:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters Column - Shows first on mobile, left on desktop */}
-          <div className="lg:col-span-1 order-1 lg:order-2 border-2 min-h-screen px-10 border-white">
+      <div className="flex-1 p-4 md:p-6 md:ml-64">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Filters Column - Hidden on mobile, shown on desktop */}
+          <div className="hidden lg:block lg:w-1/4 border-2 border-white rounded-lg p-4 bg-gray-800 h-fit">
             <Sorting 
               onSearch={handleSearch}
               onFilterChange={handleFilterChange}
@@ -101,48 +118,58 @@ const AlumniDirectory = () => {
             />
           </div>
           
-          {/* Table Column - Takes remaining space */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+          {/* Main Content Area */}
+          <div className="flex-1">
             <div className="bg-gray-900 rounded-lg p-4 md:p-6">
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold mb-2">Alumni Directory</h1>
-                <p className="text-gray-400 mb-4">
-                  Search and connect with verified alumni from Jamia Millia Islamia.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Alumni Directory</h1>
+                  <p className="text-gray-400">
+                    Search and connect with verified alumni from Jamia Millia Islamia
+                  </p>
+                </div>
+                {/* Mobile filter toggle button */}
+                <button 
+                  className="lg:hidden mt-2 sm:mt-0 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                >
+                  {showMobileFilters ? 'Hide Filters' : 'Show Filters'}
+                </button>
               </div>
 
-              {/* Alumni Table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-700">
-                  {/* Table Headers */}
-                  <thead className="bg-gray-800">
-                    <tr>
-                      <th 
-                        className="px-4 py-2 md:px-6 md:py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort("name")}
-                      >
-                        <div className="flex items-center">
-                          <span className="hidden md:inline">Name</span>
-                          <span className="md:hidden">Alumni</span>
-                          {sortConfig.key === "name" && (
-                            <span className="ml-1">
-                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
-                            </span>
-                          )}
-                        </div>
-                      </th>
-                      {/* Other table headers... */}
-                    </tr>
-                  </thead>
-                  {/* Table Body */}
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {sortedAlumni.map((alumnus) => (
-                      <tr key={alumnus.id} className="hover:bg-gray-750 transition-colors">
-                        {/* Table cells... */}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Mobile Filters (conditionally shown) */}
+              {showMobileFilters && (
+                <div className="lg:hidden mb-6 border-2 border-white rounded-lg p-4 bg-gray-800">
+                  <Sorting 
+                    onSearch={handleSearch}
+                    onFilterChange={handleFilterChange}
+                    onResetFilters={resetFilters}
+                    filters={filters}
+                  />
+                </div>
+              )}
+
+              {/* Alumni Profile Cards Grid */}
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {sortedAlumni.map((alumnus) => (
+  <div 
+    key={alumnus.id} 
+    onClick={() => navigate(`/user/${alumnus.userId}`)}
+    className="cursor-pointer"
+  >
+    <ProfileCard 
+      name={alumnus.name}
+      avatar={alumnus.avatar}
+      location={alumnus.location}
+      profession={alumnus.profession}
+      company={alumnus.company}
+      course={alumnus.course}
+      graduationYear={alumnus.graduationYear}
+      joinDate={alumnus.joinDate}
+      tags={alumnus.tags}
+    />
+  </div>
+                ))}
               </div>
 
               {sortedAlumni.length === 0 && (
