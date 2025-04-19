@@ -54,7 +54,7 @@ const AlumniProfile = () => {
             <p className="text-gray-400">{alumnus.profession} at {alumnus.company}</p>
           </div>
           <a 
-            href="/" 
+            href="/alumni" 
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
           >
             Back to Directory
@@ -89,9 +89,6 @@ const AlumniProfile = () => {
                 </div>
                 
                 <div className="pt-4 border-t border-gray-700">
-                  <button className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg">
-                    Connect
-                  </button>
                   <button className="w-full mt-2 py-2 px-4 border border-gray-600 hover:bg-gray-700 rounded-lg">
                     Message
                   </button>
