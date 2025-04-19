@@ -8,7 +8,6 @@ const userSchema = new Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please use a valid email'],
         index: true,
     },
     email: {
@@ -17,6 +16,7 @@ const userSchema = new Schema({
         unique: true,
         lowercase: true,
         trim: true,
+        match: [/^\S+@\S+\.\S+$/, 'Please use a valid email'],
     },
     password:{
         type:String,
@@ -35,9 +35,22 @@ const userSchema = new Schema({
 
     },
     role: { type: String, enum: ['alumni', 'admin'], default: 'alumni' },
-    graduationYear: { type: Number, required:true,trim:true },
+    graduationYear: { type: Number, required:true },
     course: { type: String, required: true,trim:true },
     profession: { type: String },
+    company: { type: String },
+    location: { type: String },
+    achievements: [{
+        title: String,
+        description: String,
+        date: Date
+      }],
+      linkedInUrl: { type: String },
+    experience:[{
+        type:String,
+        description:String,
+        date: Date
+    }],  
     skills: [String],
     refreshToken: {
         type: String
@@ -72,16 +85,21 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     try {
+        // Check if password exists and is a string
         if (!password || typeof password !== 'string') {
-            throw new Error('Invalid password input');
+            throw new Error('Password must be a non-empty string');
         }
+        
+        // Check if user has a password set
         if (!this.password) {
-            throw new Error('User password not set');
+            throw new Error('Password verification failed - no password set for user');
         }
+        
+        // Compare passwords
         return await bcrypt.compare(password, this.password);
     } catch (error) {
         console.error('Password comparison error:', error);
-        throw error;
+        throw error; // Re-throw the error for the controller to handle
     }
 };
 
