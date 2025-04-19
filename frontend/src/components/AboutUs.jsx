@@ -3,7 +3,7 @@ export function AboutUs() {
     return (
         <section>
             {/* Container */}
-            <div className="mx-auto w-full max-w-7xl px-5 py-12 md:px-10 md:py-16 lg:py-20">
+            <div className="mx-auto bg-gray-900 w-full max-w-7xl px-5 py-12 md:px-10 md:py-16 lg:py-20">
                 {/* Component */}
                 <div className="flex flex-col gap-14 lg:gap-20">
                     {/* Content */}

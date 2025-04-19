@@ -8,7 +8,7 @@ function Landing() {
     <>
       <div className='flex'>
         <NavBar />
-        <div>
+        <div className='sm:flex-1 sm:ml-60'>
           <Hero />
           <Footer />
         </div>
