@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/auth.js';
+import NavBar from './NavBar.jsx';
 
 export default function SignupComponent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -87,7 +88,8 @@ export default function SignupComponent() {
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
+      <NavBar/>
+      <div className="w-full sm:flex-1 sm:ml-60 max-w-md bg-white rounded-xl shadow-md overflow-hidden">
         {/* Toggle Buttons */}
         <div className="flex border-b">
           <button
