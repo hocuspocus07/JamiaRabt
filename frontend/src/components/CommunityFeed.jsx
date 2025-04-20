@@ -9,9 +9,6 @@ import {
     getCurrentUser
   } from '../utils/auth.js'; 
 
-// Set the base URL for all API requests
-const API_BASE_URL = 'https://jamiarabt.onrender.com/api';
-
 function CommunityFeed() {
     const [activeTab, setActiveTab] = useState('all');
     const [posts, setPosts] = useState([]);
@@ -31,15 +28,19 @@ function CommunityFeed() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const token=localStorage.getItem('accessToken');
                 const [userResponse, postsResponse] = await Promise.all([
-                    getCurrentUser(),
+                    getCurrentUser(token),
                     getPosts()
                 ]);
-                
-                setCurrentUser(userResponse.data.data);
+                // console.log(userResponse)
+                // console.log(postsResponse.data.data)
+
+                setCurrentUser(userResponse.data);
                 setPosts(postsResponse.data.data);
                 setIsLoading(false);
             } catch (err) {
+                console.log(err);
                 setError(err.response?.data?.message || 'Failed to load data');
                 setIsLoading(false);
             }

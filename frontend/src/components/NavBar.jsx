@@ -18,12 +18,13 @@ const API_URL='https://jamiarabt.onrender.com/api/v1/users'
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await getCurrentUser(token);
-        setUser(response.data.data);
-        setIsLoggedIn(true);
+        if(token){
+          setIsLoggedIn(true);
+        }
       } catch (error) {
         setIsLoggedIn(false);
         localStorage.removeItem('accessToken');
+        console.log("ERRRRor")
       }
     };
     checkAuth();
