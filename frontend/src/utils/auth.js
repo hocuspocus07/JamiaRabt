@@ -1,27 +1,27 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'https://jamiarabt.onrender.com/api/v1';
+const API_BASE_URL = "https://jamiarabt.onrender.com/api/v1";
 
 // Track active requests
 const activeRequests = new Set();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true 
+  withCredentials: true,
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Add request to tracking
     const requestId = `${config.method}-${config.url}`;
     activeRequests.add(requestId);
     config.requestId = requestId;
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -40,72 +40,73 @@ api.interceptors.response.use(
     if (error.config?.requestId) {
       activeRequests.delete(error.config.requestId);
     }
-    
+
     const originalRequest = error.config;
-    
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         const refreshResponse = await axios.post(
           `${API_BASE_URL}/users/refresh-token`,
           {},
           { withCredentials: true }
         );
-        
-        localStorage.setItem('accessToken', refreshResponse.data.accessToken);
+
+        localStorage.setItem("accessToken", refreshResponse.data.accessToken);
         originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem('accessToken');
+        localStorage.removeItem("accessToken");
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
 
 export const cancelAllRequests = () => {
-    activeRequests.clear();
-  };
+  activeRequests.clear();
+};
 export const login = async (email, password) => {
-  const response = await api.post('/users/login', { email, password });
-  localStorage.setItem('accessToken', response.data.data.accessToken);
+  const response = await api.post("/users/login", { email, password });
+  localStorage.setItem("accessToken", response.data.data.accessToken);
   return response.data;
 };
 
 export const getCurrentUser = async (token) => {
   try {
-      const response = await axios.get('/users/current-user', {
-          headers: {
-              Authorization: `Bearer ${token}`
-          }
-      });
-      return response.data;
+    const response = await axios.get("/users/current-user", {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
   } catch (error) {
-      if (error.response?.status === 401) {
-          localStorage.removeItem('accessToken');
-      }
-      throw error;
+    if (error.response?.status === 401) {
+      localStorage.removeItem("accessToken");
+    }
+    throw error;
   }
 };
 
 export const refreshToken = async () => {
-  return api.post('/users/refresh-token', {});
+  return api.post("/users/refresh-token", {});
 };
 export const getPosts = async () => {
-    return api.get('/posts');
-  };
-  
-  export const createPost = async (postData) => {
-    return api.post('/posts', postData);
-  };
-  
-  export const likePost = async (postId) => {
-    return api.post(`/posts/${postId}/like`);
-  };
-  
-  export const addComment = async (postId, text) => {
-    return api.post(`/posts/${postId}/comment`, { text });
-  };
+  return api.get("/posts");
+};
+
+export const createPost = async (postData) => {
+  return api.post("/posts", postData);
+};
+
+export const likePost = async (postId) => {
+  return api.post(`/posts/${postId}/like`);
+};
+
+export const addComment = async (postId, text) => {
+  return api.post(`/posts/${postId}/comment`, { text });
+};
