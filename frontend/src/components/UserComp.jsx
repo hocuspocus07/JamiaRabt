@@ -27,30 +27,34 @@ function UserComp() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const abortController = new AbortController();
-        
+        let isActive = true;
+    
         const fetchData = async () => {
             try {
-                const response = await getCurrentUser({ signal: abortController.signal });
-                setUserData(response.data.data);
+                const response = await getCurrentUser();
+                if (isActive) {
+                    setUserData(response.data.data);
+                }
             } catch (err) {
-                if (err.name === 'AbortError') return;
-                
-                setError(err.response?.data?.message || 'Failed to fetch user data');
-                if (err.response?.status === 401) {
-                    localStorage.removeItem('accessToken');
-                    navigate('/signup');
+                if (isActive) {
+                    setError(err.response?.data?.message || 'Failed to fetch user data');
+                    if (err.response?.status === 401) {
+                        localStorage.removeItem('accessToken');
+                        navigate('/signup');
+                    }
                 }
             } finally {
-                if (!abortController.signal.aborted) {
+                if (isActive) {
                     setLoading(false);
                 }
             }
         };
     
         fetchData();
-        
-        return () => abortController.abort();
+    
+        return () => {
+            isActive = false;
+        };
     }, [navigate]);
 
     const handleInputChange = (e) => {
