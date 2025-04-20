@@ -58,39 +58,6 @@ The Alumni Network Platform is a full-stack web application designed to connect 
 - **React Router** for navigation
 - **ESLint** for code quality
 
-## Project Structure
-
-### Backend Structure
-
-```
-backend/
-├── src/
-│   ├── app.js               # Express app configuration
-│   ├── constants.js         # Application constants
-│   ├── index.js             # Server entry point
-│   ├── controllers/         # Route controllers
-│   │   ├── alumni.controller.js
-│   │   ├── post.controller.js
-│   │   └── user.controller.js
-│   ├── db/                  # Database connection
-│   ├── middlewares/         # Custom middlewares
-│   ├── models/              # Mongoose models
-│   ├── routes/              # API routes
-│   └── utils/               # Utility functions
-```
-
-### Frontend Structure
-
-```
-frontend/
-├── src/
-│   ├── components/          # Reusable components
-│   ├── pages/               # Page components
-│   ├── App.jsx              # Main application component
-│   ├── main.jsx             # Application entry point
-│   └── assets/              # Static assets
-```
-
 ## Installation
 
 ### Prerequisites
