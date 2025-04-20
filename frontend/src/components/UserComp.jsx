@@ -37,20 +37,13 @@ function UserComp() {
             navigate('/signup');
             return;
         }
-
+    
         currentUserRequestController = new AbortController();
-
+    
         const fetchData = async () => {
             try {
                 const currentUser = await getCurrentUser();
-                const response = await axios.get('/users/current-user', {
-                    signal: currentUserRequestController.signal,
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
                 setUserData(currentUser);
-                setUserData(response.data.data);
             } catch (err) {
                 if (err.name !== 'CanceledError') {
                     setError(err.response?.data?.message || 'Failed to fetch user data');
@@ -63,9 +56,9 @@ function UserComp() {
                 setLoading(false);
             }
         };
-
+    
         fetchData();
-
+    
         return () => {
             if (currentUserRequestController) {
                 currentUserRequestController.abort();
