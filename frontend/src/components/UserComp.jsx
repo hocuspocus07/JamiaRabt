@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../utils/auth.js';
 
 function UserComp() {
+    if (!localStorage.getItem('accessToken')) {
+        return;
+      }
     const [activeTab, setActiveTab] = useState('personal');
     const [isEditing, setIsEditing] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -25,37 +28,48 @@ function UserComp() {
         description: ''
     });
     const navigate = useNavigate();
-
+    let currentUserRequestController = null;
     useEffect(() => {
-        let isActive = true;
-    
+        // Cancel any previous request
+        if (currentUserRequestController) {
+          currentUserRequestController.abort();
+        }
+        
+        // Create new controller for this request
+        currentUserRequestController = new AbortController();
+        
         const fetchData = async () => {
-            try {
-                const response = await getCurrentUser();
-                if (isActive) {
-                    setUserData(response.data.data);
-                }
-            } catch (err) {
-                if (isActive) {
-                    setError(err.response?.data?.message || 'Failed to fetch user data');
-                    if (err.response?.status === 401) {
-                        localStorage.removeItem('accessToken');
-                        navigate('/signup');
-                    }
-                }
-            } finally {
-                if (isActive) {
-                    setLoading(false);
-                }
+          try {
+            const response = await axios.get('/users/current-user', {
+              signal: currentUserRequestController.signal,
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+              }
+            });
+            
+            setUserData(response.data.data);
+          } catch (err) {
+            if (err.name !== 'CanceledError') {  // Ignore canceled requests
+              setError(err.response?.data?.message || 'Failed to fetch user data');
+              if (err.response?.status === 401) {
+                localStorage.removeItem('accessToken');
+                navigate('/signup');
+              }
             }
+          } finally {
+            setLoading(false);
+          }
         };
-    
+      
         fetchData();
-    
+      
+        // Cleanup function
         return () => {
-            isActive = false;
+          if (currentUserRequestController) {
+            currentUserRequestController.abort();
+          }
         };
-    }, [navigate]);
+      }, [navigate]);  // Keep only navigate as dependency
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
