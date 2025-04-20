@@ -75,19 +75,14 @@ export const login = async (email, password) => {
   return response.data;
 };
 
-export const getCurrentUser = async (token) => {
+export const getCurrentUser = async () => {
   try {
-    const response = await axios.get("https://jamiarabt.onrender.com/api/v1/users/current-user", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-      withCredentials: true
-    });
-    
+    const response = await api.get("/users/current-user");
+
     if (response.data && response.data.data) {
       return response.data.data;
     }
+
     throw new Error("Invalid response structure");
     
   } catch (error) {
@@ -98,6 +93,7 @@ export const getCurrentUser = async (token) => {
     throw error;
   }
 };
+
 
 export const refreshToken = async () => {
   return api.post("/users/refresh-token", {});

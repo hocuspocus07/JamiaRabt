@@ -6,10 +6,11 @@ import { getCurrentUser } from '../utils/auth.js';
 
 function UserComp() {
     const navigate = useNavigate();
-    if (!localStorage.getItem('accessToken')) {
-        navigate('/signup');
-        return null;
-      }
+    useEffect(() => {
+        if (!localStorage.getItem('accessToken')) {
+          navigate('/signup');
+        }
+      }, [navigate]);
       
     const [activeTab, setActiveTab] = useState('personal');
     const [isEditing, setIsEditing] = useState(false);
