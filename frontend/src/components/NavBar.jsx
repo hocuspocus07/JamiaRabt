@@ -17,11 +17,13 @@ const API_URL='https://jamiarabt.onrender.com/api/v1/users'
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await getCurrentUser();
+        const token = localStorage.getItem('accessToken');
+        const response = await getCurrentUser(token);
         setUser(response.data.data);
         setIsLoggedIn(true);
       } catch (error) {
         setIsLoggedIn(false);
+        localStorage.removeItem('accessToken');
       }
     };
     checkAuth();

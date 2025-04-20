@@ -72,6 +72,7 @@ export const cancelAllRequests = () => {
 export const login = async (email, password) => {
   const response = await api.post("/users/login", { email, password });
   localStorage.setItem("accessToken", response.data.data.accessToken);
+  localStorage.setItem('user', JSON.stringify(response.data.user));
   return response.data;
 };
 
