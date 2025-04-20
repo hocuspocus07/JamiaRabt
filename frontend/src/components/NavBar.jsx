@@ -22,6 +22,7 @@ const API_URL='https://jamiarabt.onrender.com/api/v1/users'
         setIsLoggedIn(true);
       } catch (error) {
         setIsLoggedIn(false);
+        navigate('/signup');
       }
     };
     checkAuth();
