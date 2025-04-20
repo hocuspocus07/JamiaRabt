@@ -9,6 +9,7 @@ import Alumni from './pages/Alumni.jsx';
 import UserDashboard from './pages/UserDashboard.jsx';
 import About from './pages/About.jsx';
 import AlumniProfile from './components/AlumniProfile.jsx';
+import ProtectedRoute from './utils/ProtectedRoute.js';
 
 function App() {
 
@@ -20,7 +21,7 @@ function App() {
         <Route path='/chat' element={<ChatComponent/>}/>
         <Route path='/community' element={<Community/>}/>
         <Route path='/alumni' element={<Alumni/>}/>
-        <Route path='/dashboard' element={<UserDashboard/>}/>
+        <Route path='/dashboard' element={<ProtectedRoute><UserDashboard/></ProtectedRoute>}/>
         <Route path='/about-us' element={<About/>}/>
         <Route path="/user/:id" element={<AlumniProfile />} />
       </Routes>

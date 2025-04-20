@@ -6,8 +6,10 @@ import { getCurrentUser } from '../utils/auth.js';
 
 function UserComp() {
     if (!localStorage.getItem('accessToken')) {
-        return;
+        navigate('/signup');
+        return null;
       }
+      
     const [activeTab, setActiveTab] = useState('personal');
     const [isEditing, setIsEditing] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -30,26 +32,26 @@ function UserComp() {
     const navigate = useNavigate();
     let currentUserRequestController = null;
     useEffect(() => {
-        // Cancel any previous request
-        if (currentUserRequestController) {
-          currentUserRequestController.abort();
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          navigate('/signup');
+          return;
         }
-        
-        // Create new controller for this request
+      
         currentUserRequestController = new AbortController();
-        
+      
         const fetchData = async () => {
           try {
             const response = await axios.get('/users/current-user', {
               signal: currentUserRequestController.signal,
               headers: {
-                Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+                Authorization: `Bearer ${token}`
               }
             });
-            
+      
             setUserData(response.data.data);
           } catch (err) {
-            if (err.name !== 'CanceledError') {  // Ignore canceled requests
+            if (err.name !== 'CanceledError') {
               setError(err.response?.data?.message || 'Failed to fetch user data');
               if (err.response?.status === 401) {
                 localStorage.removeItem('accessToken');
@@ -63,13 +65,13 @@ function UserComp() {
       
         fetchData();
       
-        // Cleanup function
         return () => {
           if (currentUserRequestController) {
             currentUserRequestController.abort();
           }
         };
-      }, [navigate]);  // Keep only navigate as dependency
+      }, [navigate]);
+      
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
