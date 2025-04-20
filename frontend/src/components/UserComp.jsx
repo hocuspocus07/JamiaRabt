@@ -49,8 +49,8 @@ function UserComp() {
                 Authorization: `Bearer ${token}`
               }
             });
-      console.log(response.data.data);
-            setUserData(response.data.data);
+      console.log(response.data);
+            setUserData(response.data);
           } catch (err) {
             if (err.name !== 'CanceledError') {
               setError(err.response?.data?.message || 'Failed to fetch user data');
