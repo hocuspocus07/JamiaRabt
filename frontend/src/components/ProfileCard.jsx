@@ -1,6 +1,16 @@
 import React from 'react'
 
-function ProfileCard({ name, avatar, location, profession, company, course, graduationYear, joinDate, tags }) {
+const ProfileCard=({
+    name = '',
+    avatar = 'https://via.placeholder.com/150',
+    location = 'Not specified',
+    profession = 'Not specified',
+    company = 'Not specified',
+    course = 'Not specified',
+    graduationYear = '',
+    joinDate = '',
+    tags = []
+  })=> {
   return (
     <div className="w-full bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105">
       <div className="border-b border-gray-700 px-3 py-4">

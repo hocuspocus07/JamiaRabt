@@ -1,48 +1,31 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { fetchAlumniProfile } from '../utils/alumni.js';
 
 const AlumniProfile = () => {
-  const { userId } = useParams();
+  const { id } = useParams();
   const [alumnus, setAlumnus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch user data based on userId
-    const fetchAlumnus = async () => {
+    const fetchProfile = async () => {
       try {
-        // In a real app, you would fetch from your API
-        const mockAlumni = [
-          {
-            id: "20010510",
-            name: "Floyd Miles",
-            email: "floydmiles@pagedone.io",
-            avatar: "https://pagedone.io/asset/uploads/1697536419.png",
-            company: "Louis Vuitton",
-            userId: "20010510",
-            course: "Computer Science",
-            graduationYear: 2018,
-            profession: "Software Engineer",
-            location: "United States",
-            joinDate: "Jun. 24, 2023",
-            tags: ["Tech", "Engineering"],
-            bio: "Senior Software Engineer with 5+ years of experience..."
-          },
-          // Add more alumni as needed
-        ];
-        
-        const foundAlumnus = mockAlumni.find(a => a.userId === userId);
-        setAlumnus(foundAlumnus);
-      } catch (error) {
-        console.error("Error fetching alumnus:", error);
+        setLoading(true);
+        const data = await fetchAlumniProfile(id);
+        setAlumnus(data);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch profile');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAlumnus();
-  }, [userId]);
+    fetchProfile();
+  }, [id]);
 
   if (loading) return <div className="text-white text-center py-10">Loading...</div>;
+  if (error) return <div className="text-white text-center py-10">Error: {error}</div>;
   if (!alumnus) return <div className="text-white text-center py-10">Alumnus not found</div>;
 
   return (
@@ -50,8 +33,10 @@ const AlumniProfile = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold">{alumnus.name}</h1>
-            <p className="text-gray-400">{alumnus.profession} at {alumnus.company}</p>
+            <h1 className="text-3xl font-bold">{alumnus.fullName || alumnus.username}</h1>
+            <p className="text-gray-400">
+              {alumnus.profession} {alumnus.company ? `at ${alumnus.company}` : ''}
+            </p>
           </div>
           <a 
             href="/alumni" 
@@ -66,27 +51,35 @@ const AlumniProfile = () => {
             <div className="bg-gray-800 rounded-lg p-6 sticky top-6">
               <div className="flex justify-center mb-6">
                 <img 
-                  src={alumnus.avatar} 
-                  alt={alumnus.name}
+                  src={alumnus.avatar || 'https://via.placeholder.com/150'} 
+                  alt={alumnus.fullName}
                   className="h-40 w-40 rounded-full border-4 border-gray-700"
                 />
               </div>
               
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400">Contact</h3>
-                  <p className="mt-1">{alumnus.email}</p>
-                </div>
+                {alumnus.email && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-400">Contact</h3>
+                    <p className="mt-1">{alumnus.email}</p>
+                  </div>
+                )}
                 
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400">Location</h3>
-                  <p className="mt-1">{alumnus.location}</p>
-                </div>
+                {alumnus.location && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-400">Location</h3>
+                    <p className="mt-1">{alumnus.location}</p>
+                  </div>
+                )}
                 
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400">Education</h3>
-                  <p className="mt-1">{alumnus.course} ({alumnus.graduationYear})</p>
-                </div>
+                {alumnus.course && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-400">Education</h3>
+                    <p className="mt-1">
+                      {alumnus.course} {alumnus.graduationYear ? `(${alumnus.graduationYear})` : ''}
+                    </p>
+                  </div>
+                )}
                 
                 <div className="pt-4 border-t border-gray-700">
                   <button className="w-full mt-2 py-2 px-4 border border-gray-600 hover:bg-gray-700 rounded-lg">
@@ -98,34 +91,40 @@ const AlumniProfile = () => {
           </div>
           
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">About</h2>
-              <p className="text-gray-300">
-                {alumnus.bio || "No bio available."}
-              </p>
-            </div>
+            {alumnus.bio && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h2 className="text-xl font-bold mb-4">About</h2>
+                <p className="text-gray-300">
+                  {alumnus.bio}
+                </p>
+              </div>
+            )}
             
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Experience</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium">{alumnus.company}</h3>
-                  <p className="text-gray-400">{alumnus.profession}</p>
-                  <p className="text-gray-500 text-sm">Current</p>
+            {(alumnus.profession || alumnus.company) && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h2 className="text-xl font-bold mb-4">Experience</h2>
+                <div className="space-y-4">
+                  <div>
+                    {alumnus.company && <h3 className="font-medium">{alumnus.company}</h3>}
+                    {alumnus.profession && <p className="text-gray-400">{alumnus.profession}</p>}
+                    <p className="text-gray-500 text-sm">Current</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Skills & Interests</h2>
-              <div className="flex flex-wrap gap-2">
-                {alumnus.tags?.map((tag, index) => (
-                  <span key={index} className="px-3 py-1 bg-gray-700 text-white rounded-full text-sm">
-                    {tag}
-                  </span>
-                ))}
+            {alumnus.skills?.length > 0 && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h2 className="text-xl font-bold mb-4">Skills & Interests</h2>
+                <div className="flex flex-wrap gap-2">
+                  {alumnus.skills.map((skill, index) => (
+                    <span key={index} className="px-3 py-1 bg-gray-700 text-white rounded-full text-sm">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -11,29 +11,67 @@ function UserComp() {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showAchievementForm, setShowAchievementForm] = useState(false);
+    const [showExperienceForm, setShowExperienceForm] = useState(false);
+    const [newAchievement, setNewAchievement] = useState({
+        title: '',
+        description: '',
+        date: ''
+    });
+    const [newExperience, setNewExperience] = useState({
+        company: '',
+        position: '',
+        duration: '',
+        description: ''
+    });
     const navigate = useNavigate();
+
     useEffect(() => {
+        const abortController = new AbortController();
+        
         const fetchData = async () => {
-          try {
-            const response = await getCurrentUser();
-            setUserData(response.data.data);
-          } catch (err) {
-            setError(err.response?.data?.message || 'Failed to fetch user data');
-            if (err.response?.status === 401) {
-              navigate('/signup');
+            try {
+                const response = await getCurrentUser({ signal: abortController.signal });
+                setUserData(response.data.data);
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                
+                setError(err.response?.data?.message || 'Failed to fetch user data');
+                if (err.response?.status === 401) {
+                    localStorage.removeItem('accessToken');
+                    navigate('/signup');
+                }
+            } finally {
+                if (!abortController.signal.aborted) {
+                    setLoading(false);
+                }
             }
-          } finally {
-            setLoading(false);
-          }
         };
     
         fetchData();
-      }, [navigate]);
+        
+        return () => abortController.abort();
+    }, [navigate]);
 
-    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setUserData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleAchievementChange = (e) => {
+        const { name, value } = e.target;
+        setNewAchievement(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleExperienceChange = (e) => {
+        const { name, value } = e.target;
+        setNewExperience(prev => ({
             ...prev,
             [name]: value
         }));
@@ -53,7 +91,12 @@ function UserComp() {
                     linkedInUrl: userData.linkedInUrl,
                     skills: userData.skills
                 },
-                { withCredentials: true }
+                {
+                    withCredentials: true,
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+                    }
+                }
             );
             setIsEditing(false);
             setUserData(response.data.data);
@@ -64,6 +107,114 @@ function UserComp() {
             setLoading(false);
         }
     };
+    
+
+    const handleAddAchievement = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.patch(
+                'https://jamiarabt.onrender.com/api/v1/users/update-account',
+                {
+                    achievements: [...userData.achievements, {
+                        title: newAchievement.title,
+                        description: newAchievement.description,
+                        date: newAchievement.date || new Date()
+                    }]
+                },
+                {
+                    withCredentials: true,
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+                    }
+                }
+            );
+            setUserData(response.data.data);
+            setNewAchievement({ title: '', description: '', date: '' });
+            setShowAchievementForm(false);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to add achievement');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+
+    const handleAddExperience = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.patch(
+                'https://jamiarabt.onrender.com/api/v1/users/update-account',
+                {
+                    experience: [
+                        ...(userData.experience || []),
+                        {
+                            company: newExperience.company,
+                            position: newExperience.position,
+                            duration: newExperience.duration,
+                            description: newExperience.description
+                        }
+                    ]
+                    
+                },
+                {
+                    withCredentials: true,
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+                    }
+                }
+            );
+            setUserData(response.data.data);
+            setNewExperience({ company: '', position: '', duration: '', description: '' });
+            setShowExperienceForm(false);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to add experience');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+
+    // Format activities from user data
+    const activities = [
+        ...(userData?.updatedAt ? [
+            { 
+                id: 1, 
+                type: "Update", 
+                description: "Updated profile information", 
+                date: new Date(userData.updatedAt).toLocaleDateString(),
+                icon: "🔄"
+            }
+        ] : []),
+        
+        // Achievements
+        ...(userData?.achievements?.map((achievement, index) => ({
+            id: `achievement-${index}`,
+            type: "Achievement",
+            description: achievement.title,
+            content: achievement.description,
+            date: new Date(achievement.date).toLocaleDateString(),
+            icon: "🏆"
+        })) || []),
+        
+        // Experiences
+        ...(userData?.experience?.map((exp, index) => ({
+            id: `experience-${index}`,
+            type: "Experience",
+            description: `Added ${exp.position} at ${exp.company}`,
+            content: exp.description,
+            date: new Date().toLocaleDateString(), // You might want to add date to experience model
+            icon: "💼"
+        })) || [])
+    ];
+
+    // Format experience from user data
+    const experience = userData?.experience?.map((exp, index) => ({
+        id: index + 1,
+        company: exp.company || "Unknown Company",
+        position: exp.position || "Unknown Position",
+        duration: exp.duration || "No duration specified",
+        description: exp.description || "No description provided"
+    })) || [];
 
     if (loading) {
         return (
@@ -105,22 +256,6 @@ function UserComp() {
             </div>
         );
     }
-
-    // Format activities from user data (you might need to adjust based on your actual data structure)
-    const activities = [
-        { id: 1, type: "Update", description: "Updated profile information", date: new Date(userData.updatedAt).toLocaleDateString() },
-        ...(userData.achievements.length > 0 ? [
-            { id: 2, type: "Achievement", description: `Added achievement: ${userData.achievements[0].title}`, date: "Recently" }
-        ] : [])
-    ];
-
-    // Format experience from user data
-    const experience = userData.experience.map((exp, index) => ({
-        id: index + 1,
-        company: exp.company || "Unknown Company",
-        position: exp.position || "Unknown Position",
-        duration: exp.duration || "No duration specified"
-    }));
 
     return (
         <div className='flex flex-col md:flex-row'>
@@ -272,6 +407,105 @@ function UserComp() {
                             </div>
                         )}
 
+                        {activeTab === 'activity' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                                    <h2 className="text-xl sm:text-2xl font-bold">Your Activity</h2>
+                                    <button 
+                                        onClick={() => setShowAchievementForm(true)}
+                                        className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
+                                    >
+                                        Add Achievement
+                                    </button>
+                                </div>
+
+                                {showAchievementForm && (
+                                    <div className="bg-gray-700 rounded-lg p-4 mb-6">
+                                        <h3 className="text-lg font-medium mb-3">Add New Achievement</h3>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Title</label>
+                                                <input
+                                                    type="text"
+                                                    name="title"
+                                                    value={newAchievement.title}
+                                                    onChange={handleAchievementChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Description</label>
+                                                <textarea
+                                                    name="description"
+                                                    value={newAchievement.description}
+                                                    onChange={handleAchievementChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                    rows="3"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Date</label>
+                                                <input
+                                                    type="date"
+                                                    name="date"
+                                                    value={newAchievement.date}
+                                                    onChange={handleAchievementChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={handleAddAchievement}
+                                                    disabled={loading}
+                                                    className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowAchievementForm(false)}
+                                                    className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    {activities.length > 0 ? (
+                                        activities.map(activity => (
+                                            <div key={activity.id} className="bg-gray-700 rounded-lg p-4 flex items-start hover:bg-gray-600 transition-colors">
+                                                <span className="text-xl mr-3 flex-shrink-0">{activity.icon}</span>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h3 className="font-medium text-white">{activity.type}</h3>
+                                                            <p className="text-gray-300">{activity.description}</p>
+                                                            {activity.content && (
+                                                                <p className="text-gray-400 mt-1 italic">"{activity.content}"</p>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                                                            {activity.date}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="bg-gray-700 rounded-lg p-8 text-center">
+                                            <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="mt-2 text-gray-400">No activities yet</p>
+                                            <p className="text-xs text-gray-500 mt-1">Add achievements to see them here</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {activeTab === 'education' && (
                             <div>
                                 <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Education</h2>
@@ -310,37 +544,113 @@ function UserComp() {
                             <div>
                                 <div className="flex justify-between items-center mb-4 sm:mb-6">
                                     <h2 className="text-xl sm:text-2xl font-bold">Professional Experience</h2>
-                                    <button className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none">
+                                    <button 
+                                        onClick={() => setShowExperienceForm(true)}
+                                        className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
+                                    >
                                         Add Experience
                                     </button>
                                 </div>
+
+                                {showExperienceForm && (
+                                    <div className="bg-gray-700 rounded-lg p-4 mb-6">
+                                        <h3 className="text-lg font-medium mb-3">Add New Experience</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Company</label>
+                                                <input
+                                                    type="text"
+                                                    name="company"
+                                                    value={newExperience.company}
+                                                    onChange={handleExperienceChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Position</label>
+                                                <input
+                                                    type="text"
+                                                    name="position"
+                                                    value={newExperience.position}
+                                                    onChange={handleExperienceChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-300">Duration</label>
+                                                <input
+                                                    type="text"
+                                                    name="duration"
+                                                    value={newExperience.duration}
+                                                    onChange={handleExperienceChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                    placeholder="e.g. Jan 2020 - Present"
+                                                />
+                                            </div>
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-300">Description</label>
+                                                <textarea
+                                                    name="description"
+                                                    value={newExperience.description}
+                                                    onChange={handleExperienceChange}
+                                                    className="mt-1 block w-full text-sm border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-600 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                                    rows="3"
+                                                />
+                                            </div>
+                                            <div className="sm:col-span-2 flex space-x-2">
+                                                <button
+                                                    onClick={handleAddExperience}
+                                                    disabled={loading}
+                                                    className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowExperienceForm(false)}
+                                                    className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="space-y-4 sm:space-y-6">
-                                    {experience.map(exp => (
-                                        <div key={exp.id} className="bg-gray-700 rounded-lg p-4 sm:p-6">
-                                            <div className="flex flex-col sm:flex-row">
-                                                <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
-                                                    <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-md bg-blue-500 text-white">
-                                                        <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                        </svg>
+                                    {experience.length > 0 ? (
+                                        experience.map(exp => (
+                                            <div key={exp.id} className="bg-gray-700 rounded-lg p-4 sm:p-6">
+                                                <div className="flex flex-col sm:flex-row">
+                                                    <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
+                                                        <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-md bg-blue-500 text-white">
+                                                            <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                            </svg>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg sm:text-xl font-medium text-white">{exp.company}</h3>
-                                                    <p className="mt-1 text-sm sm:text-base text-gray-300">{exp.position}</p>
-                                                    <p className="mt-1 text-xs sm:text-sm text-gray-400">{exp.duration}</p>
-                                                    <div className="mt-3 sm:mt-4">
-                                                        <h4 className="text-xs sm:text-sm font-medium text-gray-400">Key Responsibilities</h4>
-                                                        <ul className="mt-1 sm:mt-2 list-disc list-inside text-xs sm:text-sm text-gray-300 space-y-1">
-                                                            <li>Developed and maintained web applications using React and Node.js</li>
-                                                            <li>Collaborated with cross-functional teams to define and implement features</li>
-                                                            <li>Optimized application performance and improved user experience</li>
-                                                        </ul>
+                                                    <div>
+                                                        <h3 className="text-lg sm:text-xl font-medium text-white">{exp.company}</h3>
+                                                        <p className="mt-1 text-sm sm:text-base text-gray-300">{exp.position}</p>
+                                                        <p className="mt-1 text-xs sm:text-sm text-gray-400">{exp.duration}</p>
+                                                        <div className="mt-3 sm:mt-4">
+                                                            <h4 className="text-xs sm:text-sm font-medium text-gray-400">Description</h4>
+                                                            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-300">
+                                                                {exp.description}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        ))
+                                    ) : (
+                                        <div className="bg-gray-700 rounded-lg p-8 text-center">
+                                            <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="mt-2 text-gray-400">No experience added yet</p>
+                                            <p className="text-xs text-gray-500 mt-1">Add your professional experiences to showcase them here</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         )}

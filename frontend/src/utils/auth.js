@@ -1,11 +1,12 @@
+
 import axios from 'axios';
 
-const API_URL = 'https://jamiarabt.onrender.com/api/v1/users';
+const API_BASE_URL = 'https://jamiarabt.onrender.com/api/v1';
 
 const api = axios.create({
-    baseURL: API_URL,
-    withCredentials: true 
-  });
+  baseURL: API_BASE_URL,
+  withCredentials: true 
+});
 
 api.interceptors.request.use(
   (config) => {
@@ -28,7 +29,7 @@ api.interceptors.response.use(
       
       try {
         const refreshResponse = await axios.post(
-          `${API_URL}/refresh-token`,
+          `${API_BASE_URL}/users/refresh-token`,
           {},
           { withCredentials: true }
         );
@@ -40,6 +41,7 @@ api.interceptors.response.use(
         console.log(refreshError)
         localStorage.removeItem('accessToken');
         window.location.href = '/signup';
+        return Promise.reject(refreshError);
       }
     }
     
@@ -48,24 +50,30 @@ api.interceptors.response.use(
 );
 
 export const login = async (email, password) => {
-  const response = await axios.post(
-    `${API_URL}/login`,
-    { email, password },
-    { withCredentials: true }
-  );
+  const response = await api.post('/users/login', { email, password });
   localStorage.setItem('accessToken', response.data.data.accessToken);
-  console.log(response.data);
   return response.data;
 };
 
 export const getCurrentUser = async () => {
-  return api.get('/current-user');
+  return api.get('/users/current-user');
 };
 
 export const refreshToken = async () => {
-  return axios.post(
-    `${API_URL}/refresh-token`,
-    {},
-    { withCredentials: true }
-  );
+  return api.post('/users/refresh-token', {});
 };
+export const getPosts = async () => {
+    return api.get('/posts');
+  };
+  
+  export const createPost = async (postData) => {
+    return api.post('/posts', postData);
+  };
+  
+  export const likePost = async (postId) => {
+    return api.post(`/posts/${postId}/like`);
+  };
+  
+  export const addComment = async (postId, text) => {
+    return api.post(`/posts/${postId}/comment`, { text });
+  };
