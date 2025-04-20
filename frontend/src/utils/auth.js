@@ -83,7 +83,7 @@ export const getCurrentUser = async (token) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     if (error.response?.status === 401) {
       localStorage.removeItem("accessToken");
