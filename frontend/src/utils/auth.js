@@ -77,14 +77,21 @@ export const login = async (email, password) => {
 
 export const getCurrentUser = async (token) => {
   try {
-    const response = await axios.get("/users/current-user", {
+    const response = await axios.get("https://jamiarabt.onrender.com/api/v1/users/current-user", {
       headers: {
-        Accept: "application/json",
         Authorization: `Bearer ${token}`,
+        Accept: "application/json",
       },
+      withCredentials: true
     });
-    return response.data.data;
+    
+    if (response.data && response.data.data) {
+      return response.data.data;
+    }
+    throw new Error("Invalid response structure");
+    
   } catch (error) {
+    console.error("Error fetching current user:", error);
     if (error.response?.status === 401) {
       localStorage.removeItem("accessToken");
     }

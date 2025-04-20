@@ -31,42 +31,33 @@ function UserComp() {
         description: ''
     });
     
-    let currentUserRequestController = null;
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          navigate('/signup');
-          return;
-        }
-      
-        currentUserRequestController = new AbortController();
-      
-        const fetchData = async () => {
+        const fetchUserData = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                navigate('/signup');
+                return;
+            }
+    
             try {
+                console.log("Fetching user data with token:", token);
                 const currentUser = await getCurrentUser(token);
-                console.log(currentUser);
+                console.log("Received user data:", currentUser);
                 setUserData(currentUser);
             } catch (err) {
-                if (err.name !== 'CanceledError') {
-                    setError(err.response?.data?.message || 'Failed to fetch user data');
-                    if (err.response?.status === 401) {
-                        localStorage.removeItem('accessToken');
-                        navigate('/signup');
-                    }
+                console.error("Error fetching user:", err);
+                if (err.response?.status === 401) {
+                    localStorage.removeItem('accessToken');
+                    navigate('/signup');
                 }
+                setError(err.response?.data?.message || 'Failed to fetch user data');
             } finally {
                 setLoading(false);
             }
         };
-      
-        fetchData();
-      
-        return () => {
-          if (currentUserRequestController) {
-            currentUserRequestController.abort();
-          }
-        };
-      }, [navigate]);
+    
+        fetchUserData();
+    }, [navigate]);
       
 
     const handleInputChange = (e) => {
