@@ -1,36 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import NavBar from './NavBar';
+import { useNavigate } from 'react-router-dom';
+import { getCurrentUser } from '../utils/auth.js';
 
 function UserComp() {
     const [activeTab, setActiveTab] = useState('personal');
     const [isEditing, setIsEditing] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    const [userData, setUserData] = useState({
-        name: "Sajjad Hasnain",
-        email: "sajjad.hasnain@example.com",
-        phone: "+91 555 1234567",
-        graduationYear: "2018",
-        degree: "Bachelor of Science in Computer Science",
-        university: "Jamia Millia Islamia",
-        currentJob: "Senior Software Engineer at TechCorp",
-        linkedin: "linkedin.com/in/sajjadali",
-        github: "github.com/sajjadali",
-        bio: "Passionate about technology and education. Currently working on AI research projects."
-    });
+    const [userData, setUserData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+    useEffect(() => {
+        const fetchData = async () => {
+          try {
+            const response = await getCurrentUser();
+            setUserData(response.data.data);
+          } catch (err) {
+            setError(err.response?.data?.message || 'Failed to fetch user data');
+            if (err.response?.status === 401) {
+              navigate('/signup');
+            }
+          } finally {
+            setLoading(false);
+          }
+        };
+    
+        fetchData();
+      }, [navigate]);
 
-    const [activities] = useState([
-        { id: 1, type: "Connection", description: "Connected with Maria Garcia", date: "2 hours ago" },
-        { id: 2, type: "Post", description: "Shared a job opportunity at Google", date: "1 day ago" },
-        { id: 3, type: "Event", description: "Registered for Alumni Meet 2023", date: "3 days ago" },
-        { id: 4, type: "Update", description: "Updated work experience", date: "1 week ago" },
-    ]);
-
-    const [experience] = useState([
-        { id: 1, company: "TechCorp", position: "Senior Software Engineer", duration: "2021 - Present" },
-        { id: 2, company: "InnovateSoft", position: "Software Engineer", duration: "2018 - 2021" },
-        { id: 3, company: "CodeGenius", position: "Intern", duration: "Summer 2017" },
-    ]);
-
+    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setUserData(prev => ({
@@ -39,20 +39,105 @@ function UserComp() {
         }));
     };
 
-    const handleSave = () => {
-        setIsEditing(false);
+    const handleSave = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.patch(
+                'https://jamiarabt.onrender.com/api/v1/users/update-account',
+                {
+                    fullName: userData.fullName,
+                    email: userData.email,
+                    profession: userData.profession,
+                    company: userData.company,
+                    location: userData.location,
+                    linkedInUrl: userData.linkedInUrl,
+                    skills: userData.skills
+                },
+                { withCredentials: true }
+            );
+            setIsEditing(false);
+            setUserData(response.data.data);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update profile');
+            console.error('Error updating user data:', err);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col md:flex-row">
+                <NavBar showMobileMenu={showMobileMenu} setShowMobileMenu={setShowMobileMenu} />
+                <div className="flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col md:flex-row">
+                <NavBar showMobileMenu={showMobileMenu} setShowMobileMenu={setShowMobileMenu} />
+                <div className="flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white flex items-center justify-center">
+                    <div className="text-center p-4">
+                        <p className="text-red-500 mb-4">{error}</p>
+                        <button 
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!userData) {
+        return (
+            <div className="flex flex-col md:flex-row">
+                <NavBar showMobileMenu={showMobileMenu} setShowMobileMenu={setShowMobileMenu} />
+                <div className="flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white flex items-center justify-center">
+                    <p>No user data available</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Format activities from user data (you might need to adjust based on your actual data structure)
+    const activities = [
+        { id: 1, type: "Update", description: "Updated profile information", date: new Date(userData.updatedAt).toLocaleDateString() },
+        ...(userData.achievements.length > 0 ? [
+            { id: 2, type: "Achievement", description: `Added achievement: ${userData.achievements[0].title}`, date: "Recently" }
+        ] : [])
+    ];
+
+    // Format experience from user data
+    const experience = userData.experience.map((exp, index) => ({
+        id: index + 1,
+        company: exp.company || "Unknown Company",
+        position: exp.position || "Unknown Position",
+        duration: exp.duration || "No duration specified"
+    }));
 
     return (
         <div className='flex flex-col md:flex-row'>
             <NavBar showMobileMenu={showMobileMenu} setShowMobileMenu={setShowMobileMenu} />
             
-            <div className="sm:flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white">
+            <div className="flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white">
                 {/* Mobile Header */}
                 <header className="md:hidden flex items-center justify-between h-16 px-4 border-b border-gray-700">
                     <div className="flex items-center">
                         <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-600">
-                            <img src="/profile-pic.png" alt="user profile" className="h-full w-full object-cover" />
+                            {userData.avatar ? (
+                                <img src={userData.avatar} alt="user profile" className="h-full w-full object-cover" />
+                            ) : (
+                                <div className="h-full w-full flex items-center justify-center text-xl">
+                                    {userData.fullName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>
@@ -60,12 +145,14 @@ function UserComp() {
                 <main className="p-4 sm:p-6 space-y-6">
                     <div className="flex flex-col space-y-4">
                         <div className="text-white">
-                            <h1 className="text-2xl sm:text-3xl font-semibold">Welcome, {userData.name.split(' ')[0]}!</h1>
-                            <p className="text-gray-400 text-sm sm:text-base">Jamia Millia Islamia University Alumni Portal</p>
+                            <h1 className="text-2xl sm:text-3xl font-semibold">Welcome, {userData.fullName.split(' ')[0]}!</h1>
+                            <p className="text-gray-400 text-sm sm:text-base">
+                                {userData.profession || "Alumni"} {userData.company ? `at ${userData.company}` : ""}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Navigation Tabs - Mobile Scrollable */}
+                    {/* Navigation Tabs */}
                     <div className="border-b border-gray-700 overflow-x-auto">
                         <nav className="flex space-x-4 min-w-max">
                             <button
@@ -112,9 +199,10 @@ function UserComp() {
                                         <div className="space-x-2">
                                             <button 
                                                 onClick={handleSave}
-                                                className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                                                disabled={loading}
+                                                className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:opacity-50"
                                             >
-                                                Save
+                                                {loading ? 'Saving...' : 'Save'}
                                             </button>
                                             <button 
                                                 onClick={() => setIsEditing(false)}
@@ -128,15 +216,16 @@ function UserComp() {
 
                                 {isEditing ? (
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        {/* Form fields with responsive sizing */}
                                         {[
-                                            { id: "name", label: "Full Name", type: "text", value: userData.name },
+                                            { id: "fullName", label: "Full Name", type: "text", value: userData.fullName },
                                             { id: "email", label: "Email", type: "email", value: userData.email },
-                                            { id: "phone", label: "Phone", type: "text", value: userData.phone },
-                                            { id: "linkedin", label: "LinkedIn", type: "text", value: userData.linkedin },
-                                            { id: "github", label: "GitHub", type: "text", value: userData.github }
+                                            { id: "profession", label: "Profession", type: "text", value: userData.profession || '' },
+                                            { id: "company", label: "Company", type: "text", value: userData.company || '' },
+                                            { id: "location", label: "Location", type: "text", value: userData.location || '' },
+                                            { id: "linkedInUrl", label: "LinkedIn", type: "text", value: userData.linkedInUrl || '' },
+                                            { id: "skills", label: "Skills (comma separated)", type: "text", value: userData.skills.join(', ') }
                                         ].map(field => (
-                                            <div key={field.id}>
+                                            <div key={field.id} className={field.id === 'skills' ? 'sm:col-span-2' : ''}>
                                                 <label htmlFor={field.id} className="block text-xs sm:text-sm font-medium text-gray-300">
                                                     {field.label}
                                                 </label>
@@ -150,36 +239,22 @@ function UserComp() {
                                                 />
                                             </div>
                                         ))}
-                                        <div className="sm:col-span-2">
-                                            <label htmlFor="bio" className="block text-xs sm:text-sm font-medium text-gray-300">Bio</label>
-                                            <textarea
-                                                name="bio"
-                                                id="bio"
-                                                rows="3"
-                                                value={userData.bio}
-                                                onChange={handleInputChange}
-                                                className="mt-1 block w-full text-sm sm:text-base border border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-700 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                                            ></textarea>
-                                        </div>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        {/* Display fields with responsive sizing */}
                                         {[
-                                            { label: "Full Name", value: userData.name },
+                                            { label: "Full Name", value: userData.fullName },
                                             { label: "Email", value: userData.email },
-                                            { label: "Phone", value: userData.phone },
-                                            { label: "Current Position", value: userData.currentJob },
+                                            { label: "Username", value: userData.username },
+                                            { label: "Profession", value: userData.profession || 'Not specified' },
+                                            { label: "Company", value: userData.company || 'Not specified' },
+                                            { label: "Location", value: userData.location || 'Not specified' },
                                             { 
                                                 label: "LinkedIn", 
-                                                value: userData.linkedin,
-                                                link: `https://${userData.linkedin}` 
+                                                value: userData.linkedInUrl ? userData.linkedInUrl.replace(/^https?:\/\//, '') : 'Not specified',
+                                                link: userData.linkedInUrl ? (userData.linkedInUrl.startsWith('http') ? userData.linkedInUrl : `https://${userData.linkedInUrl}`) : null
                                             },
-                                            { 
-                                                label: "GitHub", 
-                                                value: userData.github,
-                                                link: `https://${userData.github}` 
-                                            }
+                                            { label: "Skills", value: userData.skills.join(', ') }
                                         ].map((field, index) => (
                                             <div key={index}>
                                                 <h3 className="text-xs sm:text-sm font-medium text-gray-400">{field.label}</h3>
@@ -192,57 +267,8 @@ function UserComp() {
                                                 </p>
                                             </div>
                                         ))}
-                                        <div className="sm:col-span-2">
-                                            <h3 className="text-xs sm:text-sm font-medium text-gray-400">About</h3>
-                                            <p className="mt-1 text-sm sm:text-base text-white">{userData.bio}</p>
-                                        </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
-
-                        {activeTab === 'activity' && (
-                            <div>
-                                <div className="flex justify-between items-center mb-4 sm:mb-6">
-                                    <h2 className="text-xl sm:text-2xl font-bold">Recent Activity</h2>
-                                    <button className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none">
-                                        View All
-                                    </button>
-                                </div>
-                                <div className="space-y-3">
-                                    {activities.map(activity => (
-                                        <div key={activity.id} className="p-3 sm:p-4 bg-gray-700 rounded-lg">
-                                            <div className="flex items-start">
-                                                <div className="flex-shrink-0 pt-0.5">
-                                                    {activity.type === "Connection" && (
-                                                        <svg className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                                        </svg>
-                                                    )}
-                                                    {activity.type === "Post" && (
-                                                        <svg className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                                                        </svg>
-                                                    )}
-                                                    {activity.type === "Event" && (
-                                                        <svg className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                        </svg>
-                                                    )}
-                                                    {activity.type === "Update" && (
-                                                        <svg className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <div className="ml-3">
-                                                    <p className="text-xs sm:text-sm font-medium text-white">{activity.description}</p>
-                                                    <p className="text-xs text-gray-400">{activity.date}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
                             </div>
                         )}
 
@@ -261,15 +287,15 @@ function UserComp() {
                                             </div>
                                         </div>
                                         <div>
-                                            <h3 className="text-lg sm:text-xl font-medium text-white">{userData.university}</h3>
-                                            <p className="mt-1 text-sm sm:text-base text-gray-300">{userData.degree}</p>
-                                            <p className="mt-1 text-xs sm:text-sm text-gray-400">Graduated: {userData.graduationYear}</p>
+                                            <h3 className="text-lg sm:text-xl font-medium text-white">Jamia Millia Islamia</h3>
+                                            <p className="mt-1 text-sm sm:text-base text-gray-300">{userData.course.toUpperCase()}</p>
+                                            <p className="mt-1 text-xs sm:text-sm text-gray-400">Graduation Year: {userData.graduationYear}</p>
                                             <div className="mt-3 sm:mt-4">
-                                                <h4 className="text-xs sm:text-sm font-medium text-gray-400">Courses Completed</h4>
+                                                <h4 className="text-xs sm:text-sm font-medium text-gray-400">Skills</h4>
                                                 <div className="mt-1 sm:mt-2 flex flex-wrap gap-1 sm:gap-2">
-                                                    {["Data Structures", "Algorithms", "Machine Learning", "Database Systems"].map(course => (
-                                                        <span key={course} className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-gray-600 text-gray-300">
-                                                            {course}
+                                                    {userData.skills.map(skill => (
+                                                        <span key={skill} className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-gray-600 text-gray-300">
+                                                            {skill}
                                                         </span>
                                                     ))}
                                                 </div>

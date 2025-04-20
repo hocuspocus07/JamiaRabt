@@ -1,6 +1,7 @@
-import { useState,useRef } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../utils/auth.js';
 
 export default function SignupComponent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,11 +18,8 @@ export default function SignupComponent() {
     skills: '',
     linkedInUrl: ''
   });
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -32,22 +30,19 @@ export default function SignupComponent() {
     }));
   };
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type and size
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload an image file');
-        return;
-      }
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        setError('Image must be less than 2MB');
-        return;
-      }
-      
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-      setError('');
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    
+    try {
+      const { email, password } = formData;
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,49 +50,36 @@ export default function SignupComponent() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    // Validate required fields
-    if (!avatarFile) {
-      setError('Profile picture is required');
-      setLoading(false);
-      return;
-    }
-
+    
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('avatar', avatarFile);
-      formDataToSend.append('fullName', formData.fullName);
-      formDataToSend.append('username', formData.username || formData.email.split('@')[0]);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('password', formData.password);
-      formDataToSend.append('course', formData.course);
-      formDataToSend.append('graduationYear', formData.graduationYear);
-      formDataToSend.append('profession', formData.profession || '');
-      formDataToSend.append('company', formData.company || '');
-      formDataToSend.append('location', formData.location || '');
-      formDataToSend.append('skills', formData.skills ? formData.skills.split(',').map(s => s.trim()) : []);
-      formDataToSend.append('linkedInUrl', formData.linkedInUrl || '');
-
+      // Convert skills to array and graduationYear to number
+      const skillsArray = formData.skills 
+        ? formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill)
+        : [];
+      
       const response = await axios.post(
         'https://jamiarabt.onrender.com/api/v1/users/register',
-        formDataToSend,
         {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+          fullName: formData.fullName,
+          username: formData.username || formData.email.split('@')[0],
+          email: formData.email,
+          password: formData.password,
+          course: formData.course,
+          graduationYear: Number(formData.graduationYear),
+          profession: formData.profession || null,
+          company: formData.company || null,
+          location: formData.location || null,
+          skills: skillsArray,
+          linkedInUrl: formData.linkedInUrl || null
+        },
+        { withCredentials: true }
       );
 
       console.log('Registration successful:', response.data);
-      setIsLogin(true); // Switch to login after success
+      setIsLogin(true);
     } catch (err) {
-      console.error('Registration error:', err);
-      if (err.response) {
-        setError(err.response.data?.message || 'Registration failed. Please check your inputs.');
-      } else {
-        setError('Network error. Please try again.');
-      }
+      console.error('Registration error:', err.response?.data);
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -110,13 +92,13 @@ export default function SignupComponent() {
         <div className="flex border-b">
           <button
             onClick={() => setIsLogin(true)}
-            className={`flex-1 py-4 font-medium hover:cursor-pointer ${isLogin ? 'bg-blue-600 text-black' : 'bg-amber-50 text-gray-700'}`}
+            className={`flex-1 py-4 font-medium hover:cursor-pointer ${isLogin ? 'bg-blue-600 text-white' : 'bg-amber-50 text-gray-700'}`}
           >
             Login
           </button>
           <button
             onClick={() => setIsLogin(false)}
-            className={`flex-1 py-4 font-medium hover:cursor-pointer ${!isLogin ? 'bg-blue-600 text-black' : 'bg-amber-50 text-gray-700'}`}
+            className={`flex-1 py-4 font-medium hover:cursor-pointer ${!isLogin ? 'bg-blue-600 text-white' : 'bg-amber-50 text-gray-700'}`}
           >
             Sign Up
           </button>
@@ -125,14 +107,14 @@ export default function SignupComponent() {
         {/* Forms Container */}
         <div className="p-6 bg-amber-50">
           {error && (
-            <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-md">
+            <div className="mb-4 p-2 bg-red-100 text-red-800 rounded-md">
               {error}
             </div>
           )}
 
           {/* Login Form */}
           {isLogin && (
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleLogin}>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome back</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -153,7 +135,8 @@ export default function SignupComponent() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="••••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="••••••••"
                   required
                 />
               </div>
@@ -179,45 +162,14 @@ export default function SignupComponent() {
             <form className="space-y-4" onSubmit={handleSignup}>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Create account</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
-                {avatarPreview && (
-                  <div className="mb-2 flex items-center">
-                    <img
-                      src={avatarPreview}
-                      alt="Preview"
-                      className="h-16 w-16 rounded-full object-cover mr-2"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAvatarPreview(null);
-                        setAvatarFile(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                      className="text-sm text-red-600 hover:text-red-800"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  name="avatar"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                  required
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="John Doe"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="John Doe"
                   required
                 />
               </div>
@@ -228,7 +180,8 @@ export default function SignupComponent() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="your@email.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="your@email.com"
                   required
                 />
               </div>
@@ -239,7 +192,8 @@ export default function SignupComponent() {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="username.example"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="username.example"
                   required
                 />
               </div>
@@ -250,7 +204,8 @@ export default function SignupComponent() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="••••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="••••••••"
                   required
                 />
               </div>
@@ -261,7 +216,8 @@ export default function SignupComponent() {
                   name="course"
                   value={formData.course}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., Computer Science"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="e.g., Computer Science"
                   required
                 />
               </div>
@@ -272,7 +228,8 @@ export default function SignupComponent() {
                   name="graduationYear"
                   value={formData.graduationYear}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., 2023"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="e.g., 2023"
                   required
                 />
               </div>
@@ -283,7 +240,8 @@ export default function SignupComponent() {
                   name="profession"
                   value={formData.profession}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., Software Engineer"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="e.g., Software Engineer"
                 />
               </div>
               <div>
@@ -293,7 +251,8 @@ export default function SignupComponent() {
                   name="skills"
                   value={formData.skills}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" placeholder="e.g., JavaScript, React, Node.js"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="e.g., JavaScript, React, Node.js"
                 />
               </div>
               <button
