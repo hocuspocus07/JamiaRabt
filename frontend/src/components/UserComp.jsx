@@ -8,8 +8,8 @@ function UserComp() {
     if (!localStorage.getItem('accessToken')) {
         navigate('/signup');
         return null;
-    }
-
+      }
+      
     const [activeTab, setActiveTab] = useState('personal');
     const [isEditing, setIsEditing] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -34,38 +34,44 @@ function UserComp() {
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            navigate('/signup');
-            return;
+          navigate('/signup');
+          return;
         }
-    
+      
         currentUserRequestController = new AbortController();
-    
+      
         const fetchData = async () => {
-            try {
-                const currentUser = await getCurrentUser();
-                setUserData(currentUser);
-            } catch (err) {
-                if (err.name !== 'CanceledError') {
-                    setError(err.response?.data?.message || 'Failed to fetch user data');
-                    if (err.response?.status === 401) {
-                        localStorage.removeItem('accessToken');
-                        navigate('/signup');
-                    }
-                }
-            } finally {
-                setLoading(false);
+          try {
+            const response = await axios.get('/users/current-user', {
+              signal: currentUserRequestController.signal,
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+      console.log(response.data.data);
+            setUserData(response.data.data);
+          } catch (err) {
+            if (err.name !== 'CanceledError') {
+              setError(err.response?.data?.message || 'Failed to fetch user data');
+              if (err.response?.status === 401) {
+                localStorage.removeItem('accessToken');
+                navigate('/signup');
+              }
             }
+          } finally {
+            setLoading(false);
+          }
         };
-    
+      
         fetchData();
-    
+      
         return () => {
-            if (currentUserRequestController) {
-                currentUserRequestController.abort();
-            }
+          if (currentUserRequestController) {
+            currentUserRequestController.abort();
+          }
         };
-    }, [navigate]);
-
+      }, [navigate]);
+      
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -121,7 +127,7 @@ function UserComp() {
             setLoading(false);
         }
     };
-
+    
 
     const handleAddAchievement = async () => {
         try {
@@ -151,7 +157,7 @@ function UserComp() {
             setLoading(false);
         }
     };
-
+    
 
     const handleAddExperience = async () => {
         try {
@@ -168,7 +174,7 @@ function UserComp() {
                             description: newExperience.description
                         }
                     ]
-
+                    
                 },
                 {
                     withCredentials: true,
@@ -186,20 +192,20 @@ function UserComp() {
             setLoading(false);
         }
     };
-
+    
 
     // Format activities from user data
     const activities = [
         ...(userData?.updatedAt ? [
-            {
-                id: 1,
-                type: "Update",
-                description: "Updated profile information",
+            { 
+                id: 1, 
+                type: "Update", 
+                description: "Updated profile information", 
                 date: new Date(userData.updatedAt).toLocaleDateString(),
                 icon: "🔄"
             }
         ] : []),
-
+        
         // Achievements
         ...(userData?.achievements?.map((achievement, index) => ({
             id: `achievement-${index}`,
@@ -209,7 +215,7 @@ function UserComp() {
             date: new Date(achievement.date).toLocaleDateString(),
             icon: "🏆"
         })) || []),
-
+        
         // Experiences
         ...(userData?.experience?.map((exp, index) => ({
             id: `experience-${index}`,
@@ -248,7 +254,7 @@ function UserComp() {
                 <div className="flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white flex items-center justify-center">
                     <div className="text-center p-4">
                         <p className="text-red-500 mb-4">{error}</p>
-                        <button
+                        <button 
                             onClick={() => window.location.reload()}
                             className="px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700"
                         >
@@ -274,7 +280,7 @@ function UserComp() {
     return (
         <div className='flex flex-col md:flex-row'>
             <NavBar showMobileMenu={showMobileMenu} setShowMobileMenu={setShowMobileMenu} />
-
+            
             <div className="flex-1 sm:ml-60 bg-gray-900 min-h-screen text-white">
                 {/* Mobile Header */}
                 <header className="md:hidden flex items-center justify-between h-16 px-4 border-b border-gray-700">
@@ -338,7 +344,7 @@ function UserComp() {
                                 <div className="flex justify-between items-center mb-4 sm:mb-6">
                                     <h2 className="text-xl sm:text-2xl font-bold">Personal Information</h2>
                                     {!isEditing ? (
-                                        <button
+                                        <button 
                                             onClick={() => setIsEditing(true)}
                                             className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
                                         >
@@ -346,14 +352,14 @@ function UserComp() {
                                         </button>
                                     ) : (
                                         <div className="space-x-2">
-                                            <button
+                                            <button 
                                                 onClick={handleSave}
                                                 disabled={loading}
                                                 className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:opacity-50"
                                             >
                                                 {loading ? 'Saving...' : 'Save'}
                                             </button>
-                                            <button
+                                            <button 
                                                 onClick={() => setIsEditing(false)}
                                                 className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none"
                                             >
@@ -398,8 +404,8 @@ function UserComp() {
                                             { label: "Profession", value: userData.profession || 'Not specified' },
                                             { label: "Company", value: userData.company || 'Not specified' },
                                             { label: "Location", value: userData.location || 'Not specified' },
-                                            {
-                                                label: "LinkedIn",
+                                            { 
+                                                label: "LinkedIn", 
                                                 value: userData.linkedInUrl ? userData.linkedInUrl.replace(/^https?:\/\//, '') : 'Not specified',
                                                 link: userData.linkedInUrl ? (userData.linkedInUrl.startsWith('http') ? userData.linkedInUrl : `https://${userData.linkedInUrl}`) : null
                                             },
@@ -425,7 +431,7 @@ function UserComp() {
                             <div>
                                 <div className="flex justify-between items-center mb-4 sm:mb-6">
                                     <h2 className="text-xl sm:text-2xl font-bold">Your Activity</h2>
-                                    <button
+                                    <button 
                                         onClick={() => setShowAchievementForm(true)}
                                         className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
                                     >
@@ -558,7 +564,7 @@ function UserComp() {
                             <div>
                                 <div className="flex justify-between items-center mb-4 sm:mb-6">
                                     <h2 className="text-xl sm:text-2xl font-bold">Professional Experience</h2>
-                                    <button
+                                    <button 
                                         onClick={() => setShowExperienceForm(true)}
                                         className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
                                     >
