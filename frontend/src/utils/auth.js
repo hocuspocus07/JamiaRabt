@@ -1,7 +1,9 @@
-
 import axios from 'axios';
 
 const API_BASE_URL = 'https://jamiarabt.onrender.com/api/v1';
+
+// Track active requests
+const activeRequests = new Set();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,14 +16,31 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add request to tracking
+    const requestId = `${config.method}-${config.url}`;
+    activeRequests.add(requestId);
+    config.requestId = requestId;
+    
     return config;
   },
   (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Remove request from tracking
+    if (response.config.requestId) {
+      activeRequests.delete(response.config.requestId);
+    }
+    return response;
+  },
   async (error) => {
+    // Remove request from tracking
+    if (error.config?.requestId) {
+      activeRequests.delete(error.config.requestId);
+    }
+    
     const originalRequest = error.config;
     
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -38,7 +57,6 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        console.log(refreshError)
         localStorage.removeItem('accessToken');
         window.location.href = '/signup';
         return Promise.reject(refreshError);
@@ -49,6 +67,9 @@ api.interceptors.response.use(
   }
 );
 
+export const cancelAllRequests = () => {
+    activeRequests.clear();
+  };
 export const login = async (email, password) => {
   const response = await api.post('/users/login', { email, password });
   localStorage.setItem('accessToken', response.data.data.accessToken);
