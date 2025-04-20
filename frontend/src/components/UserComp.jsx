@@ -42,26 +42,21 @@ function UserComp() {
         currentUserRequestController = new AbortController();
       
         const fetchData = async () => {
-          try {
-            const response = await axios.get('/users/current-user', {
-              signal: currentUserRequestController.signal,
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-      console.log(response.data);
-            setUserData(response.data);
-          } catch (err) {
-            if (err.name !== 'CanceledError') {
-              setError(err.response?.data?.message || 'Failed to fetch user data');
-              if (err.response?.status === 401) {
-                localStorage.removeItem('accessToken');
-                navigate('/signup');
-              }
+            try {
+                const currentUser = await getCurrentUser(token);
+                console.log(currentUser);
+                setUserData(currentUser);
+            } catch (err) {
+                if (err.name !== 'CanceledError') {
+                    setError(err.response?.data?.message || 'Failed to fetch user data');
+                    if (err.response?.status === 401) {
+                        localStorage.removeItem('accessToken');
+                        navigate('/signup');
+                    }
+                }
+            } finally {
+                setLoading(false);
             }
-          } finally {
-            setLoading(false);
-          }
         };
       
         fetchData();

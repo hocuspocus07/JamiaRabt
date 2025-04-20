@@ -75,8 +75,20 @@ export const login = async (email, password) => {
   return response.data;
 };
 
-export const getCurrentUser = async () => {
-  return api.get('/users/current-user');
+export const getCurrentUser = async (token) => {
+  try {
+      const response = await axios.get('/users/current-user', {
+          headers: {
+              Authorization: `Bearer ${token}`
+          }
+      });
+      return response.data;
+  } catch (error) {
+      if (error.response?.status === 401) {
+          localStorage.removeItem('accessToken');
+      }
+      throw error;
+  }
 };
 
 export const refreshToken = async () => {
