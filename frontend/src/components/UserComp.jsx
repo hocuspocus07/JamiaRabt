@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../utils/auth.js';
 
 function UserComp() {
+    const navigate = useNavigate();
     if (!localStorage.getItem('accessToken')) {
         navigate('/signup');
         return null;
@@ -29,7 +30,7 @@ function UserComp() {
         duration: '',
         description: ''
     });
-    const navigate = useNavigate();
+    
     let currentUserRequestController = null;
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
@@ -285,23 +286,24 @@ function UserComp() {
                 {/* Mobile Header */}
                 <header className="md:hidden flex items-center justify-between h-16 px-4 border-b border-gray-700">
                     <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-600">
-                            {userData.avatar ? (
-                                <img src={userData.avatar} alt="user profile" className="h-full w-full object-cover" />
-                            ) : (
-                                <div className="h-full w-full flex items-center justify-center text-xl">
-                                    {userData.fullName.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </div>
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-600">
+        {userData?.avatar ? (
+            <img src={userData.avatar} alt="user profile" className="h-full w-full object-cover" />
+        ) : (
+            <div className="h-full w-full flex items-center justify-center text-xl">
+                {userData?.fullName?.charAt(0).toUpperCase() || '?'}
+            </div>
+        )}
+    </div>
                     </div>
                 </header>
 
                 <main className="p-4 sm:p-6 space-y-6">
                     <div className="flex flex-col space-y-4">
                         <div className="text-white">
-                            <h1 className="text-2xl sm:text-3xl font-semibold">Welcome, {userData.fullName.split(' ')[0]}!</h1>
-                            <p className="text-gray-400 text-sm sm:text-base">
+                        <h1 className="text-2xl sm:text-3xl font-semibold">
+        Welcome, {userData?.fullName?.split(' ')[0] || 'User'}!
+    </h1>                            <p className="text-gray-400 text-sm sm:text-base">
                                 {userData.profession || "Alumni"} {userData.company ? `at ${userData.company}` : ""}
                             </p>
                         </div>
