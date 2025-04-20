@@ -55,25 +55,25 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "user with this email or username already exists")
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;
-    //const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    let avatarUrl = null;
 
-
-    if (!avatarLocalPath) {
-        throw new ApiError(400, "avatar file is required")
+    // Only process avatar if file exists in request
+    if (req.files && req.files.avatar && req.files.avatar[0]) {
+        const avatarLocalPath = req.files.avatar[0].path;
+        const avatar = await uploadOnCloudinary(avatarLocalPath);
+        
+        if (!avatar) {
+            throw new ApiError(400, "Failed to upload avatar file");
+        }
+        avatarUrl = avatar.url;
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
-    
-
-    if (!avatar) {
-        throw new ApiError(400, "avatar file is required")
-    }
+   
 
     const user = await User.create({
         fullName,
         username,
-        avatar: avatar.url,
+        avatar: avatarUrl,
         email,
         password,
         course,
@@ -81,7 +81,11 @@ const registerUser = asyncHandler(async (req, res) => {
         profession: profession || null,
         company: company || null,
         location: location || null,
-        skills: skills ? skills.split(',') : [],
+        skills: Array.isArray(skills) 
+        ? skills 
+        : typeof skills === 'string' 
+            ? skills.split(',').map(skill => skill.trim()) 
+            : [],
         linkedInUrl: linkedInUrl || null
     })
 
@@ -138,7 +142,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: false
     };
 
     return res
@@ -173,7 +177,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: false
     }
 
     return res
@@ -204,7 +208,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         const options = {
             httpOnly: true,
-            secure: true
+            secure: false
         }
 
         const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id)

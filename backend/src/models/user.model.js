@@ -31,7 +31,7 @@ const userSchema = new Schema({
     },
     avatar: {
         type: String,//cloudinary url
-        required: true,
+        
 
     },
     role: { type: String, enum: ['alumni', 'admin'], default: 'alumni' },
