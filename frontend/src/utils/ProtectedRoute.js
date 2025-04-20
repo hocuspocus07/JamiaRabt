@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    return token ? children : <Navigate to="/signup" replace />;
-  };
-  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      setIsAuthenticated(!!token);
+      setIsLoading(false);
+    }
+  }, []);
+
+  if (isLoading) {
+    return null;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/signup" replace />;
+};
 
 export default ProtectedRoute;
